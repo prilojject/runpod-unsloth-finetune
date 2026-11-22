@@ -1,0 +1,14 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Unsloth Fine-Tuning Runpod Serverless worker",
+  "description": "Runpod Serverless worker that fine-tunes Hugging Face LLMs with Unsloth LoRA or 4-bit QLoRA (SFT) from a chat or alpaca dataset and returns a LoRA adapter.",
+  "excludeFolders": [
+    "tests",
+    "scripts",
+    "assets"
+  ],
+  "excludeFiles": [
+    "REPORT_ru.md",
+    "index.html"
+  ]
+}
