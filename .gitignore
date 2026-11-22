@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Secrets - never commit
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+hf_token*
+.huggingface/
+.cache/huggingface/
+
+# Training outputs / caches
+outputs/
+runs/
+unsloth-finetune/
+unsloth_compiled_cache/
+checkpoints/
+adapter*/
+*.safetensors
+*.bin
+*.gguf
+*.tar.gz
+huggingface-cache/
+data-cache/
+wandb/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Internal report (not for the public repo)
+REPORT_ru.md

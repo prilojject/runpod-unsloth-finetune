@@ -1,0 +1,49 @@
+{
+  "input": {
+    "dry_run": true,
+    "check_model": false,
+    "dataset_format": "chat",
+    "dataset_inline": [
+      {
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a concise assistant."
+          },
+          {
+            "role": "user",
+            "content": "What is LoRA?"
+          },
+          {
+            "role": "assistant",
+            "content": "LoRA trains small low-rank matrices added to frozen model weights, so fine-tuning needs far less memory."
+          }
+        ]
+      },
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": "What does QLoRA add?"
+          },
+          {
+            "role": "assistant",
+            "content": "QLoRA keeps the frozen base model in 4-bit precision while training LoRA adapters in higher precision."
+          }
+        ]
+      },
+      {
+        "conversations": [
+          {
+            "from": "human",
+            "value": "Name one benefit of adapters."
+          },
+          {
+            "from": "gpt",
+            "value": "They are small files you can share and swap without copying the whole model."
+          }
+        ]
+      }
+    ]
+  }
+}

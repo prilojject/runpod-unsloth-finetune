@@ -1,0 +1,18 @@
+# Runtime deps installed on top of the PyTorch base image. torch / torchvision /
+# triton / nvidia-* come from the base image and are frozen as pip constraints
+# during the build. Versions below were resolved and verified in the local build
+# on 2026-11-23 (full lock: /app/requirements.lock inside the image).
+unsloth==2026.11.9
+unsloth_zoo==2026.11.9
+trl==1.15.0
+transformers==5.17.0
+peft==0.22.0
+accelerate==1.16.0
+bitsandbytes==0.50.2
+datasets==4.8.5
+huggingface_hub==1.33.0
+xformers==0.0.36
+runpod==2.4.0
+boto3==1.44.9
+hf_transfer==0.1.9
+requests>=2.31

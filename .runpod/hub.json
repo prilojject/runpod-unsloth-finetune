@@ -1,0 +1,295 @@
+{
+  "title": "Unsloth LoRA / QLoRA Fine-Tuning",
+  "description": "Fine-tune Hugging Face LLMs with Unsloth (LoRA or 4-bit QLoRA SFT) from a chat or alpaca dataset. Returns a LoRA adapter on your network volume, optionally pushed to the Hugging Face Hub. Long jobs run as async /run requests with checkpoints and resume.",
+  "type": "serverless",
+  "category": "language",
+  "iconUrl": "https://raw.githubusercontent.com/unslothai/unsloth/main/images/unsloth%20logo%20black%20text.png",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 80,
+    "gpuCount": 1,
+    "gpuIds": "ADA_24,AMPERE_24,ADA_48_PRO,AMPERE_48",
+    "allowedCudaVersions": [
+      "13.4",
+      "13.3",
+      "13.2",
+      "13.1",
+      "13.0",
+      "12.9",
+      "12.8",
+      "12.7",
+      "12.6"
+    ],
+    "presets": [
+      {
+        "name": "7-8B QLoRA on 24 GB (default)",
+        "defaults": {
+          "BASE_MODEL": "unsloth/Qwen2.5-7B-Instruct-bnb-4bit",
+          "LOAD_IN_4BIT": true,
+          "LORA_R": 16,
+          "LORA_ALPHA": 16,
+          "MAX_SEQ_LENGTH": 2048,
+          "BATCH_SIZE": 2,
+          "GRAD_ACCUM": 4,
+          "NUM_TRAIN_EPOCHS": 1,
+          "MAX_STEPS": 0
+        }
+      },
+      {
+        "name": "3B LoRA 16-bit on 24 GB",
+        "defaults": {
+          "BASE_MODEL": "unsloth/Llama-3.2-3B-Instruct",
+          "LOAD_IN_4BIT": false,
+          "LORA_R": 16,
+          "LORA_ALPHA": 16,
+          "MAX_SEQ_LENGTH": 2048,
+          "BATCH_SIZE": 4,
+          "GRAD_ACCUM": 2,
+          "NUM_TRAIN_EPOCHS": 1,
+          "MAX_STEPS": 0
+        }
+      },
+      {
+        "name": "Smoke test (0.5B, 30 steps)",
+        "defaults": {
+          "BASE_MODEL": "unsloth/Qwen2.5-0.5B-Instruct",
+          "LOAD_IN_4BIT": true,
+          "LORA_R": 8,
+          "LORA_ALPHA": 8,
+          "MAX_SEQ_LENGTH": 1024,
+          "BATCH_SIZE": 2,
+          "GRAD_ACCUM": 1,
+          "MAX_STEPS": 30
+        }
+      }
+    ],
+    "env": [
+      {
+        "key": "BASE_MODEL",
+        "input": {
+          "name": "Base model",
+          "type": "huggingface",
+          "description": "Hugging Face model to fine-tune (owner/name). Unsloth '-bnb-4bit' repos download fastest for QLoRA. Can be overridden per job with input.base_model.",
+          "default": "unsloth/Qwen2.5-7B-Instruct-bnb-4bit",
+          "required": true
+        }
+      },
+      {
+        "key": "DATASET",
+        "input": {
+          "name": "Dataset",
+          "type": "string",
+          "description": "Default training data: a Hugging Face dataset id (owner/name) or an http(s) URL to .jsonl/.json/.csv/.parquet. Can be overridden per job with input.dataset.",
+          "default": "",
+          "advanced": false
+        }
+      },
+      {
+        "key": "DATASET_FORMAT",
+        "input": {
+          "name": "Dataset format",
+          "type": "string",
+          "description": "chat = 'messages'/'conversations' lists (OpenAI or ShareGPT style); alpaca = instruction/input/output; auto = detect.",
+          "default": "auto",
+          "advanced": false,
+          "options": [
+            {
+              "label": "Auto-detect",
+              "value": "auto"
+            },
+            {
+              "label": "Chat (messages)",
+              "value": "chat"
+            },
+            {
+              "label": "Alpaca (instruction/output)",
+              "value": "alpaca"
+            }
+          ]
+        }
+      },
+      {
+        "key": "LOAD_IN_4BIT",
+        "input": {
+          "name": "QLoRA (4-bit base model)",
+          "type": "boolean",
+          "description": "On = QLoRA (least VRAM). Off = 16-bit LoRA (needs roughly 2-3x more VRAM).",
+          "default": true,
+          "trueValue": "true",
+          "falseValue": "false",
+          "advanced": false
+        }
+      },
+      {
+        "key": "NUM_TRAIN_EPOCHS",
+        "input": {
+          "name": "Epochs",
+          "type": "number",
+          "description": "Passes over the dataset. Ignored when Max steps > 0.",
+          "default": 1,
+          "min": 1,
+          "max": 20,
+          "advanced": false
+        }
+      },
+      {
+        "key": "MAX_STEPS",
+        "input": {
+          "name": "Max steps (0 = use epochs)",
+          "type": "number",
+          "description": "Hard cap on optimizer steps. Use e.g. 30 for a quick smoke test.",
+          "default": 0,
+          "min": 0,
+          "max": 1000000,
+          "advanced": false
+        }
+      },
+      {
+        "key": "LORA_R",
+        "input": {
+          "name": "LoRA rank (r)",
+          "type": "number",
+          "description": "Adapter capacity. 8-64 is typical; higher uses more VRAM.",
+          "default": 16,
+          "min": 1,
+          "max": 256,
+          "advanced": false
+        }
+      },
+      {
+        "key": "LORA_ALPHA",
+        "input": {
+          "name": "LoRA alpha",
+          "type": "number",
+          "description": "Scaling factor; Unsloth recommends alpha = r.",
+          "default": 16,
+          "min": 1,
+          "max": 512,
+          "advanced": false
+        }
+      },
+      {
+        "key": "MAX_SEQ_LENGTH",
+        "input": {
+          "name": "Max sequence length",
+          "type": "number",
+          "description": "Tokens per example; longer rows are truncated.",
+          "default": 2048,
+          "min": 256,
+          "max": 32768,
+          "advanced": false
+        }
+      },
+      {
+        "key": "BATCH_SIZE",
+        "input": {
+          "name": "Per-device batch size",
+          "type": "number",
+          "description": "Examples per forward pass.",
+          "default": 2,
+          "min": 1,
+          "max": 64,
+          "advanced": false
+        }
+      },
+      {
+        "key": "GRAD_ACCUM",
+        "input": {
+          "name": "Gradient accumulation",
+          "type": "number",
+          "description": "Effective batch = batch size x this.",
+          "default": 4,
+          "min": 1,
+          "max": 256,
+          "advanced": false
+        }
+      },
+      {
+        "key": "LEARNING_RATE",
+        "input": {
+          "name": "Learning rate",
+          "type": "string",
+          "description": "Default 2e-4 works for most LoRA runs.",
+          "default": "2e-4",
+          "advanced": true
+        }
+      },
+      {
+        "key": "HF_OUTPUT_REPO",
+        "input": {
+          "name": "Output HF repo (optional)",
+          "type": "string",
+          "description": "Push the adapter to this Hugging Face repo (owner/name) at the end of a successful run. Requires the HF_TOKEN secret. Leave empty to keep the adapter on the network volume only.",
+          "default": "",
+          "advanced": false
+        }
+      },
+      {
+        "key": "HF_PRIVATE",
+        "input": {
+          "name": "Private HF repo",
+          "type": "boolean",
+          "description": "Create the output repo as private.",
+          "default": true,
+          "trueValue": "true",
+          "falseValue": "false",
+          "advanced": true
+        }
+      },
+      {
+        "key": "HF_TOKEN",
+        "input": {
+          "name": "Hugging Face token (use a Runpod secret)",
+          "type": "string",
+          "description": "Do NOT paste a raw token. Create a Runpod secret (e.g. hf_token) and enter {{ RUNPOD_SECRET_hf_token }}. Needed for gated/private models and for pushing the adapter.",
+          "default": "",
+          "advanced": true
+        }
+      },
+      {
+        "key": "SAVE_STEPS",
+        "input": {
+          "name": "Checkpoint every N steps",
+          "type": "number",
+          "description": "Checkpoints go to the network volume so an interrupted job can resume.",
+          "default": 200,
+          "min": 10,
+          "max": 100000,
+          "advanced": true
+        }
+      },
+      {
+        "key": "CHAT_TEMPLATE",
+        "input": {
+          "name": "Chat template",
+          "type": "string",
+          "description": "'auto' uses the model's own template. Otherwise an Unsloth template name such as chatml, llama-3.1, qwen-2.5, gemma-3.",
+          "default": "auto",
+          "advanced": true
+        }
+      },
+      {
+        "key": "OUTPUT_ROOT",
+        "input": {
+          "name": "Output directory",
+          "type": "string",
+          "description": "Default: /runpod-volume/unsloth-finetune when a network volume is attached.",
+          "default": "",
+          "advanced": true
+        }
+      },
+      {
+        "key": "RUNPOD_INIT_TIMEOUT",
+        "input": {
+          "name": "Worker init timeout (s)",
+          "type": "number",
+          "description": "Large image; allow time for the first pull.",
+          "default": 900,
+          "min": 420,
+          "max": 3600,
+          "advanced": true
+        }
+      }
+    ]
+  }
+}

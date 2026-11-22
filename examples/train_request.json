@@ -1,0 +1,21 @@
+{
+  "input": {
+    "base_model": "unsloth/Qwen2.5-7B-Instruct-bnb-4bit",
+    "dataset": "mlabonne/FineTome-100k",
+    "dataset_format": "chat",
+    "num_train_epochs": 1,
+    "max_samples": 5000,
+    "lora_r": 16,
+    "lora_alpha": 16,
+    "max_seq_length": 2048,
+    "per_device_train_batch_size": 2,
+    "gradient_accumulation_steps": 4,
+    "load_in_4bit": true,
+    "run_name": "qwen7b-finetome-5k",
+    "hf_repo_id": "your-hf-user/qwen7b-finetome-lora"
+  },
+  "policy": {
+    "executionTimeout": 43200000,
+    "ttl": 86400000
+  }
+}

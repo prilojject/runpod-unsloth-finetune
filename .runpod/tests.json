@@ -1,0 +1,115 @@
+{
+  "tests": [
+    {
+      "name": "dry_run_chat_inline",
+      "input": {
+        "dry_run": true,
+        "dataset_format": "chat",
+        "dataset_inline": [
+          {
+            "messages": [
+              {
+                "role": "system",
+                "content": "You are a concise assistant."
+              },
+              {
+                "role": "user",
+                "content": "What is LoRA?"
+              },
+              {
+                "role": "assistant",
+                "content": "LoRA trains small low-rank matrices added to frozen model weights, so fine-tuning needs far less memory."
+              }
+            ]
+          },
+          {
+            "messages": [
+              {
+                "role": "user",
+                "content": "What does QLoRA add?"
+              },
+              {
+                "role": "assistant",
+                "content": "QLoRA keeps the frozen base model in 4-bit precision while training LoRA adapters in higher precision."
+              }
+            ]
+          },
+          {
+            "conversations": [
+              {
+                "from": "human",
+                "value": "Name one benefit of adapters."
+              },
+              {
+                "from": "gpt",
+                "value": "They are small files you can share and swap without copying the whole model."
+              }
+            ]
+          }
+        ]
+      },
+      "timeout": 300000
+    },
+    {
+      "name": "dry_run_alpaca_inline",
+      "input": {
+        "dry_run": true,
+        "dataset_format": "alpaca",
+        "base_model": "unsloth/Qwen2.5-0.5B-Instruct",
+        "dataset_inline": [
+          {
+            "instruction": "Translate to French.",
+            "input": "Good morning",
+            "output": "Bonjour"
+          },
+          {
+            "instruction": "Give a synonym for 'fast'.",
+            "input": "",
+            "output": "Quick"
+          },
+          {
+            "instruction": "Summarise in five words.",
+            "input": "LoRA fine-tuning trains small adapter matrices instead of all model weights.",
+            "output": "Train small adapters, not weights."
+          }
+        ]
+      },
+      "timeout": 300000
+    },
+    {
+      "name": "dry_run_hf_dataset_sample",
+      "input": {
+        "dry_run": true,
+        "dataset": "mlabonne/FineTome-100k",
+        "dataset_format": "chat",
+        "dry_run_rows": 20
+      },
+      "timeout": 300000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "BASE_MODEL",
+        "value": "unsloth/Qwen2.5-0.5B-Instruct"
+      },
+      {
+        "key": "DRY_RUN",
+        "value": "true"
+      }
+    ],
+    "allowedCudaVersions": [
+      "13.4",
+      "13.3",
+      "13.2",
+      "13.1",
+      "13.0",
+      "12.9",
+      "12.8",
+      "12.7",
+      "12.6"
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+{"instruction": "Translate to French.", "input": "Good morning", "output": "Bonjour"}
+{"instruction": "Give a synonym for 'fast'.", "input": "", "output": "Quick"}
+{"instruction": "Summarise in five words.", "input": "LoRA fine-tuning trains small adapter matrices instead of all model weights.", "output": "Train small adapters, not weights."}

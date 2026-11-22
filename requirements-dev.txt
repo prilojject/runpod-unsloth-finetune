@@ -1,0 +1,5 @@
+runpod==2.4.0
+datasets>=3.0
+huggingface_hub>=0.30
+requests
+pytest>=8
