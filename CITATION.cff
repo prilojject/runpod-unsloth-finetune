@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "Unsloth LoRA / QLoRA Fine-Tuning — Runpod Serverless worker"
+message: "If you use this software, please cite it using these metadata."
+type: software
+authors:
+  - name: prilojject
+repository-code: "https://github.com/prilojject/runpod-unsloth-finetune"
+url: "https://console.runpod.io/hub/prilojject/runpod-unsloth-finetune"
+abstract: "Runpod Serverless worker for supervised LoRA/QLoRA fine-tuning of Hugging Face causal LLMs with Unsloth. Accepts a base model and a chat or alpaca dataset and returns a LoRA adapter."
+keywords:
+  - Runpod
+  - Unsloth
+  - LoRA
+  - QLoRA
+  - fine-tuning
+  - Serverless
+  - LLM
+version: "1.0.0"
+license: MIT
+date-released: "2026-11-23"

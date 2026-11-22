@@ -1,0 +1,516 @@
+# Generated from src/config.py (PARAMS) and handler.py output shapes.
+openapi: 3.1.0
+info:
+  title: Unsloth LoRA / QLoRA Fine-Tuning — Runpod Serverless worker
+  version: 1.0.0
+  description: Job API of the Runpod Serverless queue endpoint created from https://github.com/prilojject/runpod-unsloth-finetune
+    . Every job field falls back to the endpoint env var (set by the Runpod Hub form) and then to the default. Unknown fields
+    and tokens in the input are rejected. Use async POST /run for training; the default execution timeout (600 s) is too short,
+    so pass policy.executionTimeout.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+- url: https://api.runpod.ai/v2/{endpoint_id}
+  variables:
+    endpoint_id:
+      default: ENDPOINT_ID
+      description: Your Runpod Serverless endpoint id
+security:
+- runpodApiKey: []
+paths:
+  /run:
+    post:
+      operationId: submitJob
+      summary: Submit an async fine-tuning (or dry-run) job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobRequest'
+            examples:
+              dryRun:
+                value:
+                  input:
+                    dry_run: true
+                    base_model: unsloth/Qwen2.5-7B-Instruct-bnb-4bit
+                    dataset: mlabonne/FineTome-100k
+                    dataset_format: chat
+                    max_samples: 5000
+              smokeTest:
+                value:
+                  input:
+                    base_model: unsloth/Qwen2.5-0.5B-Instruct
+                    dataset: mlabonne/FineTome-100k
+                    dataset_format: chat
+                    max_samples: 200
+                    max_steps: 30
+                    max_seq_length: 1024
+                    lora_r: 8
+                    lora_alpha: 8
+                    gradient_accumulation_steps: 1
+                    save_steps: 10
+                    run_name: smoke-test-0p5b
+                  policy:
+                    executionTimeout: 1800000
+                    ttl: 3600000
+      responses:
+        '200':
+          description: Job queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+  /runsync:
+    post:
+      operationId: runJobSync
+      summary: Run a short job synchronously (dry runs only; not for training)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobRequest'
+      responses:
+        '200':
+          description: Job status, with output when finished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+  /status/{job_id}:
+    get:
+      operationId: getJobStatus
+      summary: Poll a job; output includes progress while running
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+  /cancel/{job_id}:
+    post:
+      operationId: cancelJob
+      summary: Cancel a job
+      parameters:
+      - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Cancelled
+  /health:
+    get:
+      operationId: endpointHealth
+      summary: Endpoint worker and queue counts
+      responses:
+        '200':
+          description: Health
+components:
+  securitySchemes:
+    runpodApiKey:
+      type: http
+      scheme: bearer
+      description: Runpod API key
+  parameters:
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    JobRequest:
+      type: object
+      required:
+      - input
+      properties:
+        input:
+          $ref: '#/components/schemas/TrainInput'
+        policy:
+          type: object
+          description: Runpod execution policy
+          properties:
+            executionTimeout:
+              type: integer
+              description: Milliseconds. Raise it for training (max 7 days).
+            ttl:
+              type: integer
+              description: Milliseconds, queue + run time (default 24 h, max 7 days).
+        webhook:
+          type: string
+          format: uri
+    TrainInput:
+      type: object
+      additionalProperties: false
+      properties:
+        base_model:
+          type: string
+          default: unsloth/Qwen2.5-7B-Instruct-bnb-4bit
+          description: 'Hugging Face model repo id (owner/name). Endpoint env fallback: `BASE_MODEL`.'
+        model_revision:
+          type: string
+          description: 'Optional model git revision. Endpoint env fallback: `MODEL_REVISION`.'
+        load_in_4bit:
+          type: boolean
+          default: true
+          description: 'QLoRA (4-bit base). False = 16-bit LoRA. Endpoint env fallback: `LOAD_IN_4BIT`.'
+        chat_template:
+          type: string
+          default: auto
+          description: '''auto'' = tokenizer''s own template, otherwise an Unsloth template name (chatml, llama-3.1, qwen-2.5,
+            ...). Endpoint env fallback: `CHAT_TEMPLATE`.'
+        dataset:
+          type: string
+          description: 'HF dataset id or http(s) URL to .jsonl/.json/.csv/.parquet. Endpoint env fallback: `DATASET`.'
+        dataset_inline:
+          type: array
+          items:
+            type: object
+          description: Small list of records sent inline (testing).
+        dataset_format:
+          type: string
+          default: auto
+          enum:
+          - auto
+          - chat
+          - alpaca
+          description: 'Endpoint env fallback: `DATASET_FORMAT`.'
+        dataset_split:
+          type: string
+          default: train
+          description: 'Endpoint env fallback: `DATASET_SPLIT`.'
+        dataset_config:
+          type: string
+          description: 'HF dataset config/subset name. Endpoint env fallback: `DATASET_CONFIG`.'
+        max_samples:
+          type: integer
+          default: 0
+          minimum: 0
+          description: '0 = use all rows. Endpoint env fallback: `MAX_SAMPLES`.'
+        skip_invalid_rows:
+          type: boolean
+          default: false
+          description: 'Drop malformed rows instead of failing the job. Endpoint env fallback: `SKIP_INVALID_ROWS`.'
+        system_prompt:
+          type: string
+          description: 'Optional system prompt prepended to alpaca rows. Endpoint env fallback: `SYSTEM_PROMPT`.'
+        eval_split:
+          type: number
+          default: 0.0
+          minimum: 0.0
+          maximum: 0.5
+          description: 'Endpoint env fallback: `EVAL_SPLIT`.'
+        num_train_epochs:
+          type: number
+          default: 1.0
+          minimum: 0.01
+          maximum: 100
+          description: 'Endpoint env fallback: `NUM_TRAIN_EPOCHS`.'
+        max_steps:
+          type: integer
+          default: 0
+          minimum: 0
+          description: '> 0 overrides epochs (short test runs). Endpoint env fallback: `MAX_STEPS`.'
+        learning_rate:
+          type: number
+          default: 0.0002
+          minimum: 1.0e-07
+          maximum: 0.01
+          description: 'Endpoint env fallback: `LEARNING_RATE`.'
+        per_device_train_batch_size:
+          type: integer
+          default: 2
+          minimum: 1
+          maximum: 256
+          description: 'Endpoint env fallback: `BATCH_SIZE`.'
+        gradient_accumulation_steps:
+          type: integer
+          default: 4
+          minimum: 1
+          maximum: 1024
+          description: 'Endpoint env fallback: `GRAD_ACCUM`.'
+        max_seq_length:
+          type: integer
+          default: 2048
+          minimum: 128
+          maximum: 131072
+          description: 'Endpoint env fallback: `MAX_SEQ_LENGTH`.'
+        warmup_ratio:
+          type: number
+          default: 0.03
+          minimum: 0.0
+          maximum: 0.5
+          description: 'Endpoint env fallback: `WARMUP_RATIO`.'
+        lr_scheduler_type:
+          type: string
+          default: cosine
+          enum:
+          - linear
+          - cosine
+          - constant
+          - constant_with_warmup
+          description: 'Endpoint env fallback: `LR_SCHEDULER`.'
+        weight_decay:
+          type: number
+          default: 0.01
+          minimum: 0.0
+          maximum: 1.0
+          description: 'Endpoint env fallback: `WEIGHT_DECAY`.'
+        packing:
+          type: boolean
+          default: false
+          description: 'Endpoint env fallback: `PACKING`.'
+        seed:
+          type: integer
+          default: 3407
+          minimum: 0
+          description: 'Endpoint env fallback: `SEED`.'
+        lora_r:
+          type: integer
+          default: 16
+          minimum: 1
+          maximum: 1024
+          description: 'Endpoint env fallback: `LORA_R`.'
+        lora_alpha:
+          type: integer
+          default: 16
+          minimum: 1
+          maximum: 2048
+          description: 'Endpoint env fallback: `LORA_ALPHA`.'
+        lora_dropout:
+          type: number
+          default: 0.0
+          minimum: 0.0
+          maximum: 0.5
+          description: 'Endpoint env fallback: `LORA_DROPOUT`.'
+        target_modules:
+          oneOf:
+          - type: array
+            items:
+              type: string
+          - type: string
+          default:
+          - q_proj
+          - k_proj
+          - v_proj
+          - o_proj
+          - gate_proj
+          - up_proj
+          - down_proj
+          description: 'List or comma-separated string. Default: all attention + MLP projections. Endpoint env fallback: `TARGET_MODULES`.'
+        use_rslora:
+          type: boolean
+          default: false
+          description: 'Endpoint env fallback: `USE_RSLORA`.'
+        run_name:
+          type: string
+          description: 'Folder name for checkpoints/adapter. Default: the Runpod job id. Reuse it to resume. Endpoint env
+            fallback: `RUN_NAME`.'
+        output_root:
+          type: string
+          description: 'Default: /runpod-volume/unsloth-finetune if a network volume is attached. Endpoint env fallback: `OUTPUT_ROOT`.'
+        save_steps:
+          type: integer
+          default: 200
+          minimum: 1
+          description: 'Endpoint env fallback: `SAVE_STEPS`.'
+        save_total_limit:
+          type: integer
+          default: 2
+          minimum: 1
+          maximum: 100
+          description: 'Endpoint env fallback: `SAVE_TOTAL_LIMIT`.'
+        resume:
+          type: boolean
+          default: true
+          description: 'Resume from the last checkpoint of the same run_name. Endpoint env fallback: `RESUME`.'
+        hf_repo_id:
+          type: string
+          description: 'Push the adapter here (needs HF_TOKEN). Endpoint env fallback: `HF_OUTPUT_REPO`.'
+        hf_private:
+          type: boolean
+          default: true
+          description: 'Endpoint env fallback: `HF_PRIVATE`.'
+        create_archive:
+          type: boolean
+          default: true
+          description: 'Also write <run_name>-adapter.tar.gz. Endpoint env fallback: `CREATE_ARCHIVE`.'
+        upload_to_bucket:
+          type: boolean
+          default: true
+          description: 'If BUCKET_* env vars are set, upload the archive and return a presigned URL. Endpoint env fallback:
+            `UPLOAD_TO_BUCKET`.'
+        dry_run:
+          type: boolean
+          default: false
+          description: 'Validate input + dataset (sample) and return a report. No model weights, no GPU. Endpoint env fallback:
+            `DRY_RUN`.'
+        dry_run_rows:
+          type: integer
+          default: 200
+          minimum: 1
+          maximum: 100000
+          description: 'Endpoint env fallback: `DRY_RUN_ROWS`.'
+        check_model:
+          type: boolean
+          default: true
+          description: 'Dry run: verify the base model exists on HF (metadata only). Endpoint env fallback: `CHECK_MODEL`.'
+        logging_steps:
+          type: integer
+          default: 10
+          minimum: 1
+          description: 'Endpoint env fallback: `LOGGING_STEPS`.'
+        model:
+          description: Alias of `base_model`.
+        model_id:
+          description: Alias of `base_model`.
+        format:
+          description: Alias of `dataset_format`.
+        epochs:
+          description: Alias of `num_train_epochs`.
+        batch_size:
+          description: Alias of `per_device_train_batch_size`.
+        grad_accum:
+          description: Alias of `gradient_accumulation_steps`.
+        gradient_accumulation:
+          description: Alias of `gradient_accumulation_steps`.
+        qlora:
+          description: Alias of `load_in_4bit`.
+        output_repo:
+          description: Alias of `hf_repo_id`.
+        lr:
+          description: Alias of `learning_rate`.
+    JobAccepted:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          examples:
+          - IN_QUEUE
+    JobStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+          - IN_QUEUE
+          - IN_PROGRESS
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+          - TIMED_OUT
+        delayTime:
+          type: integer
+          description: ms in queue / cold start
+        executionTime:
+          type: integer
+          description: ms of execution
+        output:
+          oneOf:
+          - $ref: '#/components/schemas/TrainResult'
+          - $ref: '#/components/schemas/DryRunResult'
+          - $ref: '#/components/schemas/ErrorResult'
+    TrainResult:
+      type: object
+      properties:
+        status:
+          const: completed
+        worker_version:
+          type: string
+        run_name:
+          type: string
+        config:
+          type: object
+        warnings:
+          type: array
+          items:
+            type: string
+        dataset:
+          type: object
+        output_root:
+          type: string
+        persistent_storage:
+          type: boolean
+        training:
+          type: object
+          description: e.g. global_step, train_seconds, peak_vram_gb, metrics
+        artifacts:
+          type: object
+          properties:
+            adapter_dir:
+              type: string
+            adapter_size_mb:
+              type: number
+            adapter_files:
+              type: array
+              items:
+                type: string
+            archive_path:
+              type: string
+            download_url:
+              type: string
+              description: Only if BUCKET_* env vars are set
+            hf_repo_url:
+              type: string
+            hf_error:
+              type: string
+            bucket_error:
+              type: string
+        elapsed_seconds:
+          type: number
+    DryRunResult:
+      type: object
+      properties:
+        status:
+          enum:
+          - ok
+        dry_run:
+          const: true
+        run_name:
+          type: string
+        config:
+          type: object
+        warnings:
+          type: array
+          items:
+            type: string
+        dataset:
+          type: object
+        preview:
+          type: array
+          items:
+            type: object
+        effective_batch_size:
+          type: integer
+        estimated_steps_for_sampled_rows:
+          type: integer
+        base_model_check:
+          type: object
+        hf_output:
+          type:
+          - object
+          - 'null'
+        bucket_upload_configured:
+          type: boolean
+        elapsed_seconds:
+          type: number
+    ErrorResult:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        run_name:
+          type: string
+        checkpoints_dir:
+          type: string
+        hint:
+          type: string

@@ -1,0 +1,34 @@
+# Unsloth LoRA / QLoRA Fine-Tuning for Runpod Serverless
+
+> A Runpod Hub Serverless worker that fine-tunes Hugging Face causal LLMs (Llama, Qwen, Mistral, Gemma, Phi, and others supported by Unsloth) with LoRA or 4-bit QLoRA SFT. You send a base model and a chat or alpaca dataset; you get a LoRA adapter on a network volume and optionally on the Hugging Face Hub. This is an Unsloth Runpod template for API-first fine-tuning, not a Studio Pod.
+
+Use this file to decide what to read next. Prefer the raw Markdown links. Deploy from the Runpod Hub (the console URL is live only after moderation): https://console.runpod.io/hub/prilojject/runpod-unsloth-finetune
+
+Always use async POST /run for training, raise policy.executionTimeout (default 600s is too short; max 7 days), attach a network volume, and put HF_TOKEN in a Runpod secret — never in the job input. Start with "dry_run": true to validate data without downloading weights. Output is a LoRA adapter only (no merged weights, no GGUF, no DPO/vision/multi-GPU).
+
+## Docs
+
+- [README](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/README.md): Full human and agent documentation — quick start, parameters, GPU guidance, FAQ, comparison
+- [AGENTS.md](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/AGENTS.md): Instructions for coding agents working in this repository (tests, dry-run, secrets, paid GPU jobs)
+- [OpenAPI spec](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/openapi.yaml): Machine-readable request and response schema
+- [Hub metadata](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/.runpod/hub.json): Runpod Hub title, form fields, presets, GPU pools
+- [Hub tests](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/.runpod/tests.json): Official Hub test cases (dry_run only)
+- [LICENSE](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/LICENSE): MIT license for the worker code
+
+## Examples
+
+- [Train request](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/examples/train_request.json): Example async /run body for a 7B QLoRA job
+- [Smoke test request](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/examples/smoke_test_request.json): Short GPU smoke job
+- [Dry-run Alpaca](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/examples/dry_run_alpaca.json): Validation-only request
+- [Sample chat data](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/examples/sample_chat.jsonl): chat/messages format
+- [Sample alpaca data](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/examples/sample_alpaca.jsonl): instruction/input/output format
+
+## Optional
+
+- [Project page](https://prilojject.github.io/runpod-unsloth-finetune/): Landing page (GitHub Pages), also serves this file at /llms.txt
+- [Citation file](https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/CITATION.cff): Citation metadata
+- [GitHub repository](https://github.com/prilojject/runpod-unsloth-finetune): Source, issues, releases
+- [Runpod Hub listing](https://console.runpod.io/hub/prilojject/runpod-unsloth-finetune): One-click deploy (available after Hub review)
+- [Runpod Hub docs](https://docs.runpod.io/hub/overview): How Hub deploy works
+- [Runpod pricing](https://www.runpod.io/pricing): Current Serverless and Pod GPU rates
+- [Unsloth](https://github.com/unslothai/unsloth): Upstream trainer

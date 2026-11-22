@@ -3,7 +3,7 @@
   "description": "Fine-tune Hugging Face LLMs with Unsloth (LoRA or 4-bit QLoRA SFT) from a chat or alpaca dataset. Returns a LoRA adapter on your network volume, optionally pushed to the Hugging Face Hub. Long jobs run as async /run requests with checkpoints and resume.",
   "type": "serverless",
   "category": "language",
-  "iconUrl": "https://raw.githubusercontent.com/unslothai/unsloth/main/images/unsloth%20logo%20black%20text.png",
+  "iconUrl": "https://raw.githubusercontent.com/prilojject/runpod-unsloth-finetune/main/.runpod/icon.png",
   "config": {
     "runsOn": "GPU",
     "containerDiskInGb": 80,
